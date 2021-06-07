@@ -135,6 +135,8 @@ int main() {
 
 
     //matrix translation to rotate the shape
+
+    /*
     glm::mat4 trans = glm::mat4(1.0f); //initializes identity matrix
     trans = glm::rotate(trans, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f)); //rotate the identity matrix
     shader.activate(); 
@@ -145,6 +147,7 @@ int main() {
     trans2 = glm::rotate(trans2, glm::radians(15.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     shader2.activate();
     shader2.setMat4("transform", trans); 
+    */
 
 
 
@@ -159,23 +162,21 @@ int main() {
         glClearColor(0.1f, 0.3f, 0.3f, 1.0f); //background color 
         glClear(GL_COLOR_BUFFER_BIT); 
 
-        trans = glm::rotate(trans, glm::radians((float)glfwGetTime() / 100.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        //trans = glm::rotate(trans, glm::radians((float)glfwGetTime() / 100.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         shader.activate(); 
-        shader.setMat4("transform", trans); 
+        //shader.setMat4("transform", trans); 
         shader2.activate();
-        shader2.setMat4("transform", trans);
+        //shader2.setMat4("transform", trans);
 
         // draw shapes
         glBindVertexArray(VAO); //openGL now knows which vertex array object to look at, and as a result knows which vertex buffer data to look at
         shader.activate();
         glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0); 
 
-        trans2 = glm::rotate(trans2, glm::radians((float)glfwGetTime() / -100.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        shader2.activate(); 
-        shader2.setMat4("transform", trans2); 
-
-
-        shader2.activate();
+        //trans2 = glm::rotate(trans2, glm::radians((float)glfwGetTime() / -100.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        //shader2.activate(); 
+        //shader2.setMat4("transform", trans2); 
+        //shader2.activate();
         glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(3 * sizeof(GLuint))); //we change the offset by 3 indices
 
 
