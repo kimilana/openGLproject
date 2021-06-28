@@ -2,6 +2,7 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <stb/stb_image.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -54,7 +55,7 @@ int main() {
 
     //initialize window object 
 
-    GLFWwindow* window = glfwCreateWindow(800, 600, "OpenGL tutorial", NULL, NULL); //create a pointer to our window, specify width, height, title, monitor(null)
+    GLFWwindow* window = glfwCreateWindow(800, 600, "Window", NULL, NULL); //create a pointer to our window, specify width, height, title, monitor(null)
      
     //check to see if window was created by checking if the pointer is null
     if (window == NULL) { //window not created
@@ -87,11 +88,11 @@ int main() {
     //vertex array
     float vertices[] = { //vertex data 
 
-        //positions             colors                
-        0.5f, 0.5f, 0.0f,       1.0f, 1.0f, 0.5f, //top right
-        -0.5f, 0.5f, 0.0f,      0.5f, 1.0f, 0.75f, //top left
-        -0.5f, -0.5f, 0.0f,     0.6f, 1.0f, 0.2f,  //bottom left
-        0.5f, -0.5f, 0.0f,      1.0f, 0.2f, 1.0f //bottom right
+        //positions             colors                      texture coordinates      
+        0.5f, 0.5f, 0.0f,       1.0f, 1.0f, 0.5f,           1.0f, 1.0f,    //top right
+        -0.5f, 0.5f, 0.0f,      0.5f, 1.0f, 0.75f,          0.0f, 1.0f,    //top left
+        -0.5f, -0.5f, 0.0f,     0.6f, 1.0f, 0.2f,           0.0f, 0.0f,    //bottom left
+        0.5f, -0.5f, 0.0f,      1.0f, 0.2f, 1.0f,           1.0f, 0.0f     //bottom right
 
 
     };
@@ -125,13 +126,52 @@ int main() {
     //set attributes pointers
 
     //positions
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0); // (index, number of values per vertex, type of data, bool normalized, size,offset)
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0); // (index, number of values per vertex, type of data, bool normalized, size,offset)
     glEnableVertexAttribArray(0); //index=0 
 
     //color
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float))
-    ); 
-    glEnableVertexAttribArray(1); //index=0 
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float))); 
+    glEnableVertexAttribArray(1); //index=1
+
+    //texture coordinates
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float))); 
+    glEnableVertexAttribArray(2); 
+
+
+    // TEXTURES
+
+    unsigned int texture1; 
+
+    glGenTextures(1, &texture1);
+    glBindTexture(GL_TEXTURE_2D, texture1); 
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); //x coordinate
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); //y coordinate
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    //load image
+    int width, height, nChannels; 
+    unsigned char* data = stbi_load("assets/image1.jpg", &width, &height, &nChannels, 0); 
+
+    if (data) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    
+    }
+    else {
+        std::cout << "Failed to load texture" << std::endl; 
+    }
+
+    stbi_image_free(data); 
+
+    shader.activate(); 
+    shader.setInt("texture1", 0); //the shader will look for texture unit 0 
+
+
+
+
 
 
     //matrix translation to rotate the shape
@@ -157,6 +197,12 @@ int main() {
         processInput(window);
 
         //render
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f); 
+        glClear(GL_COLOR_BUFFER_BIT); 
+
+        glActiveTexture(GL_TEXTURE0); //activate 0th texture unit
+        glBindTexture(GL_TEXTURE_2D, texture1); //bind the texture to the active unit. Tell the 0th texture unit to point to texture 1 which points to the image data 
+
 
          //clear the entire window and set color to specified color in RGBA format
         glClearColor(0.1f, 0.3f, 0.3f, 1.0f); //background color 
