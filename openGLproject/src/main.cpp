@@ -140,7 +140,7 @@ int main() {
 
     // TEXTURES
 
-    unsigned int texture1; 
+    unsigned int texture1, texture2; 
 
     glGenTextures(1, &texture1);
     glBindTexture(GL_TEXTURE_2D, texture1); 
@@ -153,6 +153,7 @@ int main() {
 
     //load image
     int width, height, nChannels; 
+    stbi_set_flip_vertically_on_load(true); 
     unsigned char* data = stbi_load("assets/image1.jpg", &width, &height, &nChannels, 0); 
 
     if (data) {
@@ -166,8 +167,26 @@ int main() {
 
     stbi_image_free(data); 
 
+    glGenTextures(1, &texture2); 
+    glBindTexture(GL_TEXTURE_2D, texture2); 
+
+    data = stbi_load("assets/image2.png", &width, &height, &nChannels, 0);
+    if (data) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+    }
+    else {
+        std::cout << "Failed to load texture" << std::endl;
+    }
+
+    stbi_image_free(data);
+
+
     shader.activate(); 
     shader.setInt("texture1", 0); //the shader will look for texture unit 0 
+    shader.setInt("texture2", 1); 
+
 
 
 
@@ -202,6 +221,9 @@ int main() {
 
         glActiveTexture(GL_TEXTURE0); //activate 0th texture unit
         glBindTexture(GL_TEXTURE_2D, texture1); //bind the texture to the active unit. Tell the 0th texture unit to point to texture 1 which points to the image data 
+
+        glActiveTexture(GL_TEXTURE1); //for the second image
+        glBindTexture(GL_TEXTURE_2D, texture2);
 
 
          //clear the entire window and set color to specified color in RGBA format
