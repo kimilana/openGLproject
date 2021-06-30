@@ -45,5 +45,11 @@
     <Image Include="assets\image2.png">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="assets\greyhounds.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="assets\greyhound2.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

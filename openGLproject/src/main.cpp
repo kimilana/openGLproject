@@ -89,10 +89,10 @@ int main() {
     float vertices[] = { //vertex data 
 
         //positions             colors                      texture coordinates      
-        0.5f, 0.5f, 0.0f,       1.0f, 1.0f, 0.5f,           1.0f, 1.0f,    //top right
-        -0.5f, 0.5f, 0.0f,      0.5f, 1.0f, 0.75f,          0.0f, 1.0f,    //top left
-        -0.5f, -0.5f, 0.0f,     0.6f, 1.0f, 0.2f,           0.0f, 0.0f,    //bottom left
-        0.5f, -0.5f, 0.0f,      1.0f, 0.2f, 1.0f,           1.0f, 0.0f     //bottom right
+        0.7f, 0.7f, 0.0f,       1.0f, 1.0f, 0.5f,           1.0f, 1.0f,    //top right
+        -0.7f, 0.7f, 0.0f,      0.5f, 1.0f, 0.75f,          0.0f, 1.0f,    //top left
+        -0.7f, -0.7f, 0.0f,     0.6f, 1.0f, 0.2f,           0.0f, 0.0f,    //bottom left
+        0.7f, -0.7f, 0.0f,      1.0f, 0.2f, 1.0f,           1.0f, 0.0f     //bottom right
 
 
     };
@@ -154,7 +154,7 @@ int main() {
     //load image
     int width, height, nChannels; 
     stbi_set_flip_vertically_on_load(true); 
-    unsigned char* data = stbi_load("assets/image1.jpg", &width, &height, &nChannels, 0); 
+    unsigned char* data = stbi_load("assets/greyhounds.jpg", &width, &height, &nChannels, 0); 
 
     if (data) {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
@@ -170,9 +170,9 @@ int main() {
     glGenTextures(1, &texture2); 
     glBindTexture(GL_TEXTURE_2D, texture2); 
 
-    data = stbi_load("assets/image2.png", &width, &height, &nChannels, 0);
+    data = stbi_load("assets/greyhound2.jpg", &width, &height, &nChannels, 0);
     if (data) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
 
     }
@@ -227,7 +227,9 @@ int main() {
 
 
          //clear the entire window and set color to specified color in RGBA format
-        glClearColor(0.1f, 0.3f, 0.3f, 1.0f); //background color 
+        //glClearColor(0.1f, 0.3f, 0.3f, 1.0f); //blue background color 
+
+        glClearColor(1.0f, 0.7f, 0.10f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT); 
 
         //trans = glm::rotate(trans, glm::radians((float)glfwGetTime() / 100.0f), glm::vec3(0.0f, 0.0f, 1.0f));
