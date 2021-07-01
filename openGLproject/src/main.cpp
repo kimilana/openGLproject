@@ -190,14 +190,16 @@ int main() {
 
     //matrix translation to rotate the shape
 
-    
+   
     glm::mat4 trans = glm::mat4(1.0f); //initializes identity matrix
+
+     /*
     trans = glm::rotate(trans, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f)); //rotate the identity matrix
     shader.activate(); 
     shader.setMat4("transform", trans); 
    
 
-    /*
+   
     glm::mat4 trans2 = glm::mat4(1.0f);
     trans2 = glm::scale(trans2, glm::vec3(1.5f));
     trans2 = glm::rotate(trans2, glm::radians(15.0f), glm::vec3(0.0f, 0.0f, 1.0f));
@@ -229,7 +231,7 @@ int main() {
         glClearColor(1.0f, 0.7f, 0.10f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT); 
 
-        trans = glm::rotate(trans, glm::radians((float)glfwGetTime() / 100.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        trans = glm::rotate(trans, glm::radians(0.05f), glm::vec3(0.1, 0.1f, 0.1f));
         shader.activate(); 
         shader.setMat4("transform", trans); 
         //shader2.activate();
