@@ -229,9 +229,9 @@ int main() {
         glClearColor(1.0f, 0.7f, 0.10f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT); 
 
-        //trans = glm::rotate(trans, glm::radians((float)glfwGetTime() / 100.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        trans = glm::rotate(trans, glm::radians((float)glfwGetTime() / 100.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         shader.activate(); 
-        //shader.setMat4("transform", trans); 
+        shader.setMat4("transform", trans); 
         //shader2.activate();
         //shader2.setMat4("transform", trans);
 
