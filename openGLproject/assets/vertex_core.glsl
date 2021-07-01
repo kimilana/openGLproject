@@ -11,8 +11,8 @@ uniform mat4 transform; //set in code
 
 
 void main() {
-	gl_Position = transform * vec4(aPos, 1.0); 
-	//gl_Position = vec4(aPos, 1.0); 
+	//gl_Position = transform * vec4(aPos, 1.0); 
+	gl_Position = vec4(aPos, 1.0); 
 	ourColor = aColor; 
 	TexCoord = aTexCoord; 
 

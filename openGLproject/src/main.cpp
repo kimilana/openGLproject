@@ -26,6 +26,8 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 //method to process input
 void processInput(GLFWwindow* window);
 
+float mixVal = 0.5f; //variable to control the mixing of textures through the shader
+
 std::string  loadShaderSrc(const char* filename); //this method will be used to load the source code of our glsl shaders 
 
 
@@ -231,11 +233,13 @@ int main() {
         glClearColor(1.0f, 0.7f, 0.10f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT); 
 
-        trans = glm::rotate(trans, glm::radians(0.05f), glm::vec3(0.1, 0.1f, 0.1f));
+        //trans = glm::rotate(trans, glm::radians(0.05f), glm::vec3(0.1, 0.1f, 0.1f));
         shader.activate(); 
-        shader.setMat4("transform", trans); 
+        //shader.setMat4("transform", trans); 
         //shader2.activate();
         //shader2.setMat4("transform", trans);
+
+        shader.setFloat("mixVal", mixVal); 
 
         // draw shapes
         glBindVertexArray(VAO); //openGL now knows which vertex array object to look at, and as a result knows which vertex buffer data to look at
@@ -281,6 +285,25 @@ void processInput(GLFWwindow* window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) { //test if escape key is pressed down
         glfwSetWindowShouldClose(window, true); //this will end the while loop, closing the window if the escape key is pressed 
     }
+
+
+    //change mix value
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+        mixVal += .001f; 
+
+        if (mixVal > 1) {
+            mixVal = 1.0f;
+        }
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+        mixVal -= .001f;
+        
+        if (mixVal < 0) {
+            mixVal = 0.0f;
+        }
+    }
+
 }
 
 
