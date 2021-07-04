@@ -36,7 +36,8 @@ float mixVal = 0.5f; //variable to control the mixing of textures through the sh
 float ww = 800; 
 float wh = 600; 
 
-glm::mat4 transform = glm::mat4(1.0f); 
+glm::mat4 mouseTransform = glm::mat4(1.0f); 
+
 Joystick mainJ(0); 
 
 
@@ -94,7 +95,53 @@ int main() {
     Shader shader2("assets/vertex_core.glsl", "assets/fragment_core2.glsl");
     Shader mandelbrotShader("assets/vertex_core.glsl", "assets/fragment_mandelbrot.glsl");
 
+    //VERTICES FOR A CUBE
 
+    float vertices[] = {
+    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+    };
+
+    /* VERTICES OF A RECTANGLE
     //vertex array
     float vertices[] = { //vertex data 
 
@@ -107,17 +154,18 @@ int main() {
 
     };
 
-    //integer array of indices for our triangles
+    //integer array of indices for our triangles. We will put this data in the EBO
     unsigned int indices[] = {
         0, 1, 2, //first triangle
         2, 3, 0 //second triangle
     }; 
 
+    */
+
     //VAO, VBO
-    unsigned int VAO, VBO, EBO; 
+    unsigned int VAO, VBO; 
     glGenVertexArrays(1, &VAO); //Vertex array object (VAO), contains pointers to the vertex buffers
     glGenBuffers(1, &VBO); //Vertex buffer object (VBO), buffer containining vertex data 
-    glGenBuffers(1, &EBO); //element buffer object
 
     //bind VAO
     glBindVertexArray(VAO); // passes in an integer and openGL will know which array object is the active one
@@ -127,24 +175,19 @@ int main() {
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); //static draw tells openGL that we won't be modifying this data much
 
 
-    //put index array in EBO
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO); //bind our EBO 
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW); 
-
-
     //set attributes pointers (the attributes here are vertex positions, vertex color, and texture coordinates)   
 
     //positions
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0); // (index, number of values per vertex, type of data, bool normalized, size, offset)
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5* sizeof(float), (void*)0); // (index, number of values per vertex, type of data, bool normalized, size, offset)
     glEnableVertexAttribArray(0); //index=0 
 
     //color
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float))); 
-    glEnableVertexAttribArray(1); //index=1
+    //VertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float))); 
+    //EnableVertexAttribArray(1); //index=1
 
     //texture coordinates
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float))); 
-    glEnableVertexAttribArray(2); 
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float))); 
+    glEnableVertexAttribArray(1); 
 
 
    /*
@@ -203,19 +246,15 @@ int main() {
 
 
     //matrix translation to rotate the shape
-
-   
     glm::mat4 trans = glm::mat4(1.0f); //initializes identity matrix
-
-     /*
-    trans = glm::rotate(trans, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f)); //rotate the identity matrix
+    trans = glm::rotate(trans, glm::radians(15.0f), glm::vec3(0.0f, 1.0f, 0.0f)); //rotatation matrix
     shader.activate(); 
-    shader.setMat4("transform", trans); 
+    shader.setMat4("transform", trans); //this uniform variable called "transform" is sent to the vertex shader. We set its value to the transform named "trans".  
    
 
-   
+   /*
     glm::mat4 trans2 = glm::mat4(1.0f);
-    trans2 = glm::scale(trans2, glm::vec3(1.5f));
+    trans2 = glm::scale(trans2, glm::vec3(1.5f)); //scale matrix. Scales by a factor of 1.5
     trans2 = glm::rotate(trans2, glm::radians(15.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     shader2.activate();
     shader2.setMat4("transform", trans); 
@@ -248,31 +287,31 @@ int main() {
 
 
          //clear the entire window and set color to specified color in RGBA format
-        //glClearColor(0.1f, 0.3f, 0.3f, 1.0f); //blue background color 
+        glClearColor(0.1f, 0.3f, 0.3f, 1.0f); //blue background color 
 
-        glClearColor(1.0f, 0.7f, 0.10f, 1.0f);
+        //glClearColor(1.0f, 0.7f, 0.10f, 1.0f); //yellow-orange background color
         glClear(GL_COLOR_BUFFER_BIT); 
 
-        //trans = glm::rotate(trans, glm::radians(0.05f), glm::vec3(0.1, 0.1f, 0.1f));
+        trans = glm::rotate(trans, glm::radians((float)glfwGetTime() / -100.0f), glm::vec3(1.0, 0.0f, 0.0f));
         shader.activate(); 
-        //shader.setMat4("transform", trans); 
+        shader.setMat4("transform", trans); 
         //shader2.activate();
         //shader2.setMat4("transform", trans);
 
         shader.setFloat("mixVal", mixVal); 
-        mandelbrotShader.setMat4("transform", transform); 
+        mandelbrotShader.setMat4("mouseTransform", mouseTransform); 
 
         // draw shapes
         glBindVertexArray(VAO); //openGL now knows which vertex array object to look at, and as a result knows which vertex buffer data to look at
         shader.activate();
-        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0); 
+        //glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0); //first triangle
 
         //trans2 = glm::rotate(trans2, glm::radians((float)glfwGetTime() / -100.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         //shader2.activate(); 
         //shader2.setMat4("transform", trans2); 
         //shader2.activate();
-        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(3 * sizeof(GLuint))); //we change the offset by 3 indices
-
+        //glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(3 * sizeof(GLuint))); //second trianglewe change the offset by 3 indices
+        glDrawArrays(GL_TRIANGLES, 0, 36); //we have 6 faces and 6 vertices per face (4 position vertices and 2 texture vertices) so we have 36 in total
 
 
         // send new frame to window
@@ -282,7 +321,6 @@ int main() {
 
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
 
 
     glfwTerminate();
@@ -334,27 +372,27 @@ void processInput(GLFWwindow* window) {
 
     
     if (Keyboard::key(GLFW_KEY_W)) { //if W key is pressed 
-        transform = glm::translate(transform, glm::vec3(0.0f, 0.001f, 0.0f)); //matrix transform to move in the positive y direction 
+        mouseTransform = glm::translate(mouseTransform, glm::vec3(0.0f, 0.001f, 0.0f)); //matrix transform to move in the positive y direction 
     }
 
     if (Keyboard::key(GLFW_KEY_S)) { //if S key is pressed 
-        transform = glm::translate(transform, glm::vec3(0.0f, -0.001f, 0.0f)); //matrix transform to move in the positive y direction 
+        mouseTransform = glm::translate(mouseTransform, glm::vec3(0.0f, -0.001f, 0.0f)); //matrix transform to move in the positive y direction 
     }
 
     if (Keyboard::key(GLFW_KEY_A)) { //if A key is pressed 
-        transform = glm::translate(transform, glm::vec3(-0.001f, 0.0f, 0.0f)); //matrix transform to move in the negative x direction
+        mouseTransform = glm::translate(mouseTransform, glm::vec3(-0.001f, 0.0f, 0.0f)); //matrix transform to move in the negative x direction
     }
 
     if (Keyboard::key(GLFW_KEY_D)) { //if D key is pressed 
-        transform = glm::translate(transform, glm::vec3(0.001f, 0.0f, 0.0f)); //matrix transform to move in the positive x direction
+        mouseTransform = glm::translate(mouseTransform, glm::vec3(0.001f, 0.0f, 0.0f)); //matrix transform to move in the positive x direction
     }
 
     if (Keyboard::key(GLFW_KEY_Z)) {
-        transform = glm::scale(transform, glm::vec3(1.001, 1.001, 0.0f));
+        mouseTransform = glm::scale(mouseTransform, glm::vec3(1.001, 1.001, 0.0f));
     }
 
     if (Keyboard::key(GLFW_KEY_X)) {
-        transform = glm::scale(transform, glm::vec3(.999, .999, 0.0f));
+        mouseTransform = glm::scale(mouseTransform, glm::vec3(.999, .999, 0.0f));
         
     }
    
@@ -367,11 +405,11 @@ void processInput(GLFWwindow* window) {
     float ly = -mainJ.axesState(GLFW_JOYSTICK_AXES_LEFT_STICK_Y); 
 
     if (std::abs(lx) > 0.05f) { //deadzone: have to move joystick a certain amount to move 
-        transform = glm::translate(transform, glm::vec3(lx / 1000, 0.0f, 0.0f));   
+        mouseTransform = glm::translate(mouseTransform, glm::vec3(lx / 1000, 0.0f, 0.0f));   
     }
 
     if (std::abs(ly) > 0.05f) {
-        transform = glm::translate(transform, glm::vec3(0.0f, ly / 1000, 0.0f));
+        mouseTransform = glm::translate(mouseTransform, glm::vec3(0.0f, ly / 1000, 0.0f));
     }
 
 
@@ -381,10 +419,10 @@ void processInput(GLFWwindow* window) {
     //left joystick trigger zooms out 
     float lt = mainJ.axesState(GLFW_JOYSTICK_AXES_LEFT_TRIGGER) / 2 + 0.5f;
     if (lt < 0.500008f) {
-        transform = glm::scale(transform, glm::vec3(1-lt / 10, 1-lt / 10, 0.0f));
+        mouseTransform = glm::scale(mouseTransform, glm::vec3(1-lt / 10, 1-lt / 10, 0.0f));
     }
     if (lt > 0.500008f) {
-        transform = glm::scale(transform, glm::vec3(1 + lt / 10, 1 + lt / 10, 0.0f));
+        mouseTransform = glm::scale(mouseTransform, glm::vec3(1 + lt / 10, 1 + lt / 10, 0.0f));
     }
 
     std::cout << "LT" << lt << std::endl;
