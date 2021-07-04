@@ -85,6 +85,9 @@ int main() {
     glfwSetCursorPosCallback(window, Mouse::cursorPosCallback); //sets the mouse position callback of the window 
     glfwSetScrollCallback(window, Mouse::mouseWheelCallback); 
 
+    glEnable(GL_DEPTH_TEST); //enables depth testing for the rendering of 3D shapes
+                            //so openGL will automatically write to a depth buffer to keep track of the z positions(depth) of each fragmentand discard fragments if they are too far or if something is covering them
+
 
 
 
@@ -247,7 +250,8 @@ int main() {
 
     //matrix translation to rotate the shape
     glm::mat4 trans = glm::mat4(1.0f); //initializes identity matrix
-    trans = glm::rotate(trans, glm::radians(15.0f), glm::vec3(0.0f, 1.0f, 0.0f)); //rotatation matrix
+    trans = glm::rotate(trans, glm::radians(45.0f), glm::vec3(1.0f, 0.0f, 0.0f)); //rotatation matrix
+    trans = glm::rotate(trans, glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f)); //rotatation matrix
     shader.activate(); 
     shader.setMat4("transform", trans); //this uniform variable called "transform" is sent to the vertex shader. We set its value to the transform named "trans".  
    
@@ -270,14 +274,23 @@ int main() {
     }
 
 
-    //while loop that runs the program
+
+
+
+
+
+
+    /*
+     WHILE LOOP THAT RUNS THE PROGRAM
+    
+    */
     while (!glfwWindowShouldClose(window)) {
         //process input
         processInput(window);
 
         //render
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f); 
-        glClear(GL_COLOR_BUFFER_BIT); 
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //clear both the buffer holding the colors and the buffer holding the fragment depths when the frame changes
 
         glActiveTexture(GL_TEXTURE0); //activate 0th texture unit
         glBindTexture(GL_TEXTURE_2D, texture1); //bind the texture to the active unit. Tell the 0th texture unit to point to texture 1 which points to the image data 
@@ -292,9 +305,9 @@ int main() {
         //glClearColor(1.0f, 0.7f, 0.10f, 1.0f); //yellow-orange background color
         glClear(GL_COLOR_BUFFER_BIT); 
 
-        trans = glm::rotate(trans, glm::radians((float)glfwGetTime() / -100.0f), glm::vec3(1.0, 0.0f, 0.0f));
-        shader.activate(); 
-        shader.setMat4("transform", trans); 
+        //trans = glm::rotate(trans, glm::radians((float)glfwGetTime() / -100.0f), glm::vec3(1.0, 0.0f, 0.0f)); //rotates faster with each frame 
+        //shader.activate(); 
+        //shader.setMat4("transform", trans); 
         //shader2.activate();
         //shader2.setMat4("transform", trans);
 
