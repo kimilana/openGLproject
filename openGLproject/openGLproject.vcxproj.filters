@@ -27,9 +27,27 @@
     <ClCompile Include="lib\stb.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\io\Joystick.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\io\Keyboard.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\io\Mouse.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\io\Joystick.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\io\Keyboard.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\io\Mouse.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -37,6 +55,7 @@
     <None Include="assets\fragment_core.glsl" />
     <None Include="assets\fragment_core2.glsl" />
     <None Include="assets\vertex_core.glsl" />
+    <None Include="assets\fragment_mandelbrot.glsl" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="assets\image1.jpg">

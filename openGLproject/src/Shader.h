@@ -20,7 +20,6 @@ public:
 	std::string loadShaderSrc(const char* filepath); //this function loads the shader source code
 	GLuint compileShader(const char* filepath, GLenum type); //this function compiles the shader
 
-	//uniform functions
 	// uniform functions
 	void setBool(const std::string& name, bool value);
 	void setInt(const std::string& name, int value);

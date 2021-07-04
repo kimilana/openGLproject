@@ -1,8 +1,9 @@
 #include "Shader.h"
 
+//constructor
 Shader::Shader(const char* vertexShaderPath, const char* fragmentShaderPath) {
-	int success;
-	char infolog[512];
+	int success;  //success of the compilation of shader code 
+	char infolog[512]; //to store error message if there is one 
 
 	GLuint vertexShader = compileShader(vertexShaderPath, GL_VERTEX_SHADER);
 	GLuint fragShader = compileShader(fragmentShaderPath, GL_FRAGMENT_SHADER); 

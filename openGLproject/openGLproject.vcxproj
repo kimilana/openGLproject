@@ -144,15 +144,22 @@
   <ItemGroup>
     <ClCompile Include="lib\glad.c" />
     <ClCompile Include="lib\stb.cpp" />
+    <ClCompile Include="src\io\Joystick.cpp" />
+    <ClCompile Include="src\io\Keyboard.cpp" />
+    <ClCompile Include="src\io\Mouse.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Shader.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\io\Joystick.h" />
+    <ClInclude Include="src\io\Keyboard.h" />
+    <ClInclude Include="src\io\Mouse.h" />
     <ClInclude Include="src\Shader.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\fragment_core.glsl" />
     <None Include="assets\fragment_core2.glsl" />
+    <None Include="assets\fragment_mandelbrot.glsl" />
     <None Include="assets\vertex_core.glsl" />
   </ItemGroup>
   <ItemGroup>
