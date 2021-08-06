@@ -33,12 +33,14 @@ void processInput(GLFWwindow* window);
 
 //global variables
 float mixVal = 0.5f; //variable to control the mixing of textures through the shader
-float ww = 800; 
-float wh = 600; 
 
 glm::mat4 mouseTransform = glm::mat4(1.0f); 
 
 Joystick mainJ(0); 
+
+unsigned int SCR_WIDTH = 800, SCR_HEIGHT = 600; 
+float x, y, z; 
+float theta = 45.0f; //frame of view 
 
 
 
@@ -56,7 +58,7 @@ int main() {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     //initialize window object 
-    GLFWwindow* window = glfwCreateWindow(ww, wh, "Window", NULL, NULL); //create a pointer to our window, specify width, height, title, monitor(null)
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "openGL window", NULL, NULL); //create a pointer to our window, specify width, height, title, monitor(null)
      
     //check to see if window was created by checking if the pointer is null
     if (window == NULL) { //window not created
@@ -77,7 +79,7 @@ int main() {
 
     //set viewport. Tell OpenGL how to display/ how to render data
     // processed coordinates in OpenGL are between -1 and 1, so we effectively map from the range (-1,1) to our window's coordinates, for example (0,800) and (0,600)
-    glViewport(0, 0, ww, wh); //set the position and dimensions of the window, (x position of lower left corner y position of lower left corner, window width,window height) 
+    glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT); //set the position and dimensions of the window, (x position of lower left corner y position of lower left corner, window width,window height) 
 
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback); 
 
@@ -248,21 +250,8 @@ int main() {
     shader.setInt("texture2", 1); 
 
 
-    //matrix translation to rotate the shape
-    glm::mat4 trans = glm::mat4(1.0f); //initializes identity matrix
-    trans = glm::rotate(trans, glm::radians(45.0f), glm::vec3(1.0f, 0.0f, 0.0f)); //rotatation matrix
-    trans = glm::rotate(trans, glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f)); //rotatation matrix
-    shader.activate(); 
-    shader.setMat4("transform", trans); //this uniform variable called "transform" is sent to the vertex shader. We set its value to the transform named "trans".  
    
 
-   /*
-    glm::mat4 trans2 = glm::mat4(1.0f);
-    trans2 = glm::scale(trans2, glm::vec3(1.5f)); //scale matrix. Scales by a factor of 1.5
-    trans2 = glm::rotate(trans2, glm::radians(15.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    shader2.activate();
-    shader2.setMat4("transform", trans); 
-    */
 
     //determine if a joystick is present
     mainJ.update(); 
@@ -270,8 +259,13 @@ int main() {
         std::cout << mainJ.getName() << " is present." << std::endl; 
     }
     else {
-        std::cout << "Not present." << std::endl; 
+        std::cout << "Joystick not present." << std::endl; 
     }
+
+    //coordinates for the view matrix
+    x = 0.0f; 
+    y = 0.0f; 
+    z = 3.0f; 
 
 
 
@@ -296,7 +290,7 @@ int main() {
         glBindTexture(GL_TEXTURE_2D, texture1); //bind the texture to the active unit. Tell the 0th texture unit to point to texture 1 which points to the image data 
 
         glActiveTexture(GL_TEXTURE1); //for the second image
-        glBindTexture(GL_TEXTURE_2D, texture2);
+        glBindTexture(GL_TEXTURE_2D, texture2); //bind the second texture
 
 
          //clear the entire window and set color to specified color in RGBA format
@@ -304,28 +298,31 @@ int main() {
 
         //glClearColor(1.0f, 0.7f, 0.10f, 1.0f); //yellow-orange background color
         glClear(GL_COLOR_BUFFER_BIT); 
-
-        //trans = glm::rotate(trans, glm::radians((float)glfwGetTime() / -100.0f), glm::vec3(1.0, 0.0f, 0.0f)); //rotates faster with each frame 
-        //shader.activate(); 
-        //shader.setMat4("transform", trans); 
-        //shader2.activate();
-        //shader2.setMat4("transform", trans);
-
-        shader.setFloat("mixVal", mixVal); 
-        mandelbrotShader.setMat4("mouseTransform", mouseTransform); 
-
+        
         // draw shapes
         glBindVertexArray(VAO); //openGL now knows which vertex array object to look at, and as a result knows which vertex buffer data to look at
         shader.activate();
-        //glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0); //first triangle
 
-        //trans2 = glm::rotate(trans2, glm::radians((float)glfwGetTime() / -100.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        //shader2.activate(); 
-        //shader2.setMat4("transform", trans2); 
-        //shader2.activate();
-        //glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(3 * sizeof(GLuint))); //second trianglewe change the offset by 3 indices
+        //create transformation for screen
+        glm::mat4 model = glm::mat4(1.0f); //model transformation is for objects going from local space to world space
+        glm::mat4 view = glm::mat4(1.0f); //view transformation is for objects going from view world space to view space. Specific to each camera
+        glm::mat4 projection = glm::mat4(1.0f); 
+
+        model = glm::rotate(model, (float)glfwGetTime() * glm::radians(-55.0f), glm::vec3(0.5f));  //roration
+        view = glm::translate(view, glm::vec3(-x, -y, -z)); //sets the position of the camera. negated so that forward is positive
+        projection = glm::perspective(glm::radians(theta), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f); //field of view
+
+        shader.activate(); 
+
+        shader.setMat4("model", model); 
+        shader.setMat4("view", view); 
+        shader.setMat4("projection", projection); 
+        shader.setFloat("mixVal", mixVal);
+        shader.setMat4("mouseTransform", mouseTransform);
+
         glDrawArrays(GL_TRIANGLES, 0, 36); //we have 6 faces and 6 vertices per face (4 position vertices and 2 texture vertices) so we have 36 in total
 
+        glBindVertexArray(0); 
 
         // send new frame to window
         glfwSwapBuffers(window);
@@ -349,10 +346,9 @@ int main() {
 //defines the method framebuffer_size_callback 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height); //reset the glViewport every time it is resized 
-    //windowWidth = width; 
-    //windowHeight = height; 
-    std::cout << width << std::endl;
-    std::cout << height << std::endl; 
+    SCR_WIDTH = width; 
+    SCR_HEIGHT = height; 
+    
 }
 
 //defines the method processInput
@@ -385,47 +381,92 @@ void processInput(GLFWwindow* window) {
 
     
     if (Keyboard::key(GLFW_KEY_W)) { //if W key is pressed 
-        mouseTransform = glm::translate(mouseTransform, glm::vec3(0.0f, 0.001f, 0.0f)); //matrix transform to move in the positive y direction 
+        //mouseTransform = glm::translate(mouseTransform, glm::vec3(0.0f, 0.001f, 0.0f)); //matrix transform to move in the positive y direction 
+        y -= 0.01f; 
+       
     }
 
     if (Keyboard::key(GLFW_KEY_S)) { //if S key is pressed 
-        mouseTransform = glm::translate(mouseTransform, glm::vec3(0.0f, -0.001f, 0.0f)); //matrix transform to move in the positive y direction 
+        //mouseTransform = glm::translate(mouseTransform, glm::vec3(0.0f, -0.001f, 0.0f)); //matrix transform to move in the positive y direction 
+        y += 0.01f;
+        
     }
 
     if (Keyboard::key(GLFW_KEY_A)) { //if A key is pressed 
-        mouseTransform = glm::translate(mouseTransform, glm::vec3(-0.001f, 0.0f, 0.0f)); //matrix transform to move in the negative x direction
+        //mouseTransform = glm::translate(mouseTransform, glm::vec3(-0.001f, 0.0f, 0.0f)); //matrix transform to move in the negative x direction
+        x += 0.01f; 
     }
 
     if (Keyboard::key(GLFW_KEY_D)) { //if D key is pressed 
-        mouseTransform = glm::translate(mouseTransform, glm::vec3(0.001f, 0.0f, 0.0f)); //matrix transform to move in the positive x direction
+        //mouseTransform = glm::translate(mouseTransform, glm::vec3(0.001f, 0.0f, 0.0f)); //matrix transform to move in the positive x direction
+        x -= 0.01f; 
     }
 
     if (Keyboard::key(GLFW_KEY_Z)) {
-        mouseTransform = glm::scale(mouseTransform, glm::vec3(1.001, 1.001, 0.0f));
+        //mouseTransform = glm::scale(mouseTransform, glm::vec3(1.001, 1.001, 0.0f));
+
+        z -= 0.01f; 
     }
 
     if (Keyboard::key(GLFW_KEY_X)) {
-        mouseTransform = glm::scale(mouseTransform, glm::vec3(.999, .999, 0.0f));
-        
+        //mouseTransform = glm::scale(mouseTransform, glm::vec3(.999, .999, 0.0f));
+        z += 0.01f; //increase z value of camera view
+    }
+
+    if (Keyboard::key(GLFW_KEY_F)) { 
+        theta += 0.01f; //if F key pressed, inrease field of view (zoom in)
+
+    }
+
+    if (Keyboard::key(GLFW_KEY_G)) {
+        theta -= 0.01f; //if G key pressed, decrease field of view (zoom out)
+
     }
    
    
+    //joystick
 
-  /*
     mainJ.update(); 
 
     float lx = mainJ.axesState(GLFW_JOYSTICK_AXES_LEFT_STICK_X); 
-    float ly = -mainJ.axesState(GLFW_JOYSTICK_AXES_LEFT_STICK_Y); 
+    float ly = mainJ.axesState(GLFW_JOYSTICK_AXES_LEFT_STICK_Y); 
 
+
+    //account for deadzone
     if (std::abs(lx) > 0.05f) { //deadzone: have to move joystick a certain amount to move 
-        mouseTransform = glm::translate(mouseTransform, glm::vec3(lx / 1000, 0.0f, 0.0f));   
+        x += lx / 5.0f; 
     }
 
     if (std::abs(ly) > 0.05f) {
         mouseTransform = glm::translate(mouseTransform, glm::vec3(0.0f, ly / 1000, 0.0f));
+        z += ly / 5.0f; 
+    }
+
+    if (mainJ.buttonState(GLFW_JOYSTICK_BTN_DOWN) == GLFW_PRESS) {
+        y += 0.25f; 
+    }
+
+    if (mainJ.buttonState(GLFW_JOYSTICK_BTN_RIGHT) == GLFW_PRESS) {
+        y -= 0.25f;
+    }
+
+    float rt = mainJ.axesState(GLFW_JOYSTICK_AXES_RIGHT_TRIGGER) / 2.0f + 0.5f;
+    if (rt > 0.5f) {
+        theta += 0.1f; 
     }
 
 
+    float lt = mainJ.axesState(GLFW_JOYSTICK_AXES_LEFT_TRIGGER) / 2.0f + 0.5f;
+    if (lt > 0.5f) {
+        theta -= 0.1f;
+    }
+
+
+
+
+
+
+    /*
    //right joystick trigger zooms in. the triggers are axes because they represent a continuous range of values 
     float rt = mainJ.axesState(GLFW_JOYSTICK_AXES_RIGHT_TRIGGER) / 2 + 0.5f;  //normal range for triggers is [-1,1], we are switching it to [0,1]
 
@@ -437,11 +478,10 @@ void processInput(GLFWwindow* window) {
     if (lt > 0.500008f) {
         mouseTransform = glm::scale(mouseTransform, glm::vec3(1 + lt / 10, 1 + lt / 10, 0.0f));
     }
+    */
 
-    std::cout << "LT" << lt << std::endl;
-    std::cout << "RT" << rt << std::endl;
       
-   */
+
 
 
 }
