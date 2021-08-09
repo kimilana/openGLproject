@@ -14,6 +14,7 @@
 #include <string>
 
 #include "graphics/Shader.h" 
+#include "graphics/Texture.h"
 
 #include "io/Keyboard.h"
 #include "io/Mouse.h"
@@ -38,25 +39,21 @@ unsigned int SCR_HEIGHT = 600;
 
 Screen screen; 
 
-float mixVal = 0.5f; //variable to control the mixing of textures through the shader
+float mixVal = 0.6f; //variable to control the mixing of textures through the shader
 
 glm::mat4 mouseTransform = glm::mat4(1.0f); 
 
+//cameras 
 Camera cameras[2] = {
     Camera(glm::vec3(0.0f, 0.0f, 3.0f)),
     Camera(glm::vec3(10.0f, 10.0f, 10.0f))
 }; 
 int activeCam = 0; 
-
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f)); //pass in x y and z values for camera position
 float deltaTime = 0.0f; 
 float lastFrame = 0.0f; 
 
-
+//joystick
 Joystick mainJ(0);
-
-
-
 
 
 
@@ -75,6 +72,7 @@ int main() {
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPACT, GL_TRUE);
 #endif
 
+    //create window or give error message if window creation fails
     if (!screen.init()) {
         std::cout << "could not create window." << std::endl;
         glfwTerminate(); //this function terminates glfw
@@ -197,58 +195,14 @@ int main() {
    * Textures
    */
 
-    unsigned int texture1, texture2; 
-
-    glGenTextures(1, &texture1); //creates a texture
-    glBindTexture(GL_TEXTURE_2D, texture1); //tells openGL that texture1 is the active texture. On the GPU, the first texture unit points to texture1   
-
-    //integer parameters for textures
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); //x coordinate
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); //y coordinate
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-
-    //load image
-    int width, height, nChannels; 
-    stbi_set_flip_vertically_on_load(true); //stbi loads images upside down, so we flip them vertically to make them rightside up
-    unsigned char* data = stbi_load("assets/crab.jpg", &width, &height, &nChannels, 0); //holds the data from our image file (the variable "data" is a pointer to the specified image data in memory 
-
-    if (data) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data); //specify a two-dimensional texture image. (target texture, level-of-detail number, number of color components, width, height, border (must be 0), format of pixel data, type of pixel data, data (specifies a pointer to the image data in memory) 
-        glGenerateMipmap(GL_TEXTURE_2D); //mipmaps are pre-calculated, optimized sequences of images, each of which is a progressively lower resolution representation of the previous.
-    
-    }
-    else { //if the texture didn't load 
-        std::cout << "Failed to load texture" << std::endl; 
-    }
-
-    stbi_image_free(data); //free the loaded image from memory
-
-   
-    glGenTextures(1, &texture2); 
-    glBindTexture(GL_TEXTURE_2D, texture2); 
-
-    data = stbi_load("assets/marylandflag.jpg", &width, &height, &nChannels, 0);
-    if (data) {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-
-    }
-    else {
-        std::cout << "Failed to load texture" << std::endl;
-    }
-
-    stbi_image_free(data);
-
+    Texture texture1("assets/marylandflag.jpg", "texture1");
+    texture1.load();
+    Texture texture2("assets/crab.jpg", "texture2"); 
+    texture2.load(); 
 
     shader.activate(); 
-    shader.setInt("texture1", 0); //the shader will look for texture unit 0 
-    shader.setInt("texture2", 1); 
-
-
-   
+    shader.setInt("texture1", texture1.id); //the texture unit is specified by the id variable
+    shader.setInt("texture2", texture2.id); 
 
 
     //determine if a joystick is present
@@ -259,11 +213,6 @@ int main() {
     else {
         std::cout << "Joystick not present." << std::endl; 
     }
-
- 
-
-
-
 
 
 
@@ -279,27 +228,23 @@ int main() {
 
         //process input
         processInput(deltaTime);
-
         screen.update();
 
+        //bind textures
         glActiveTexture(GL_TEXTURE0); //activate 0th texture unit
-        glBindTexture(GL_TEXTURE_2D, texture1); //bind the texture to the active unit. Tell the 0th texture unit to point to texture 1 which points to the image data 
-
+        texture1.bind(); //bind the texture to the active unit. Tell the 0th texture unit to point to texture 1 which points to the image data 
         glActiveTexture(GL_TEXTURE1); //for the second image
-        glBindTexture(GL_TEXTURE_2D, texture2); //bind the second texture
+        texture2.bind(); //bind the second texture
 
-        
         // draw shapes
         glBindVertexArray(VAO); //openGL now knows which vertex array object to look at, and as a result knows which vertex buffer data to look at
-        shader.activate();
 
         //create transformation for screen
         glm::mat4 model = glm::mat4(1.0f); //model transformation is for objects going from local space to world space
         glm::mat4 view = glm::mat4(1.0f); //view transformation is for objects going from view world space to view space. Specific to each camera
         glm::mat4 projection = glm::mat4(1.0f); 
 
-        model = glm::rotate(model, (float)glfwGetTime() * glm::radians(-55.0f), glm::vec3(0.5f));  //roration
-        //view = glm::translate(view, glm::vec3(-x, -y, -z)); //sets the position of the camera. negated so that forward is positive
+        model = glm::rotate(model, (float)glfwGetTime() * glm::radians(-55.0f), glm::vec3(0.5f));  //rotation
         view = cameras[activeCam].getViewMatrix(); //view matrix comes from our camera
         projection = glm::perspective(glm::radians(cameras[activeCam].getZoom()), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f); //field of view
 
