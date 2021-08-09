@@ -18,6 +18,7 @@
 #include "io/Keyboard.h"
 #include "io/Mouse.h"
 #include "io/Joystick.h"
+#include "io/Camera.h"
 
  
 //method declaration
@@ -28,18 +29,30 @@
 void framebuffer_size_callback(GLFWwindow* window, int width, int height); 
 
 //method to process user input
-void processInput(GLFWwindow* window);
-
+void processInput(GLFWwindow* window, double dt); //dt is deltaTime
 
 //global variables
+unsigned int SCR_WIDTH = 800;
+unsigned int SCR_HEIGHT = 600;
+
 float mixVal = 0.5f; //variable to control the mixing of textures through the shader
 
 glm::mat4 mouseTransform = glm::mat4(1.0f); 
 
-Joystick mainJ(0); 
+Camera cameras[2] = {
+    Camera(glm::vec3(0.0f, 0.0f, 3.0f)),
+    Camera(glm::vec3(10.0f, 10.0f, 10.0f))
+}; 
+int activeCam = 0; 
 
-unsigned int SCR_WIDTH = 800, SCR_HEIGHT = 600; 
+Camera camera(glm::vec3(0.0f, 0.0f, 3.0f)); //pass in x y and z values for camera position
+float deltaTime = 0.0f; 
+float lastFrame = 0.0f; 
+
+
 float x, y, z; 
+Joystick mainJ(0);
+
 float theta = 45.0f; //frame of view 
 
 
@@ -87,6 +100,9 @@ int main() {
     glfwSetCursorPosCallback(window, Mouse::cursorPosCallback); //sets the mouse position callback of the window 
     glfwSetScrollCallback(window, Mouse::mouseWheelCallback); 
 
+    //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); //do not show mouse cursor
+
+
     glEnable(GL_DEPTH_TEST); //enables depth testing for the rendering of 3D shapes
                             //so openGL will automatically write to a depth buffer to keep track of the z positions(depth) of each fragmentand discard fragments if they are too far or if something is covering them
 
@@ -96,9 +112,8 @@ int main() {
     /*
         shaders
     */
-    Shader shader("assets/vertex_core.glsl", "assets/fragment_core.glsl");
-    Shader shader2("assets/vertex_core.glsl", "assets/fragment_core2.glsl");
-    Shader mandelbrotShader("assets/vertex_core.glsl", "assets/fragment_mandelbrot.glsl");
+    Shader shader("assets/object.vs", "assets/object.fs");
+    Shader mandelbrotShader("assets/object.vs", "assets/fragment_mandelbrot.glsl");
 
     //VERTICES FOR A CUBE
 
@@ -215,7 +230,7 @@ int main() {
     //load image
     int width, height, nChannels; 
     stbi_set_flip_vertically_on_load(true); //stbi loads images upside down, so we flip them vertically to make them rightside up
-    unsigned char* data = stbi_load("assets/greyhounds.jpg", &width, &height, &nChannels, 0); //holds the data from our image file (the variable "data" is a pointer to the specified image data in memory 
+    unsigned char* data = stbi_load("assets/crab.jpg", &width, &height, &nChannels, 0); //holds the data from our image file (the variable "data" is a pointer to the specified image data in memory 
 
     if (data) {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data); //specify a two-dimensional texture image. (target texture, level-of-detail number, number of color components, width, height, border (must be 0), format of pixel data, type of pixel data, data (specifies a pointer to the image data in memory) 
@@ -232,7 +247,7 @@ int main() {
     glGenTextures(1, &texture2); 
     glBindTexture(GL_TEXTURE_2D, texture2); 
 
-    data = stbi_load("assets/greyhound2.jpg", &width, &height, &nChannels, 0);
+    data = stbi_load("assets/marylandflag.jpg", &width, &height, &nChannels, 0);
     if (data) {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
@@ -279,8 +294,14 @@ int main() {
     
     */
     while (!glfwWindowShouldClose(window)) {
+        double currentTime = glfwGetTime();
+        deltaTime = currentTime - lastFrame;
+        lastFrame = currentTime; 
+
+
+
         //process input
-        processInput(window);
+        processInput(window, deltaTime);
 
         //render
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f); 
@@ -309,14 +330,16 @@ int main() {
         glm::mat4 projection = glm::mat4(1.0f); 
 
         model = glm::rotate(model, (float)glfwGetTime() * glm::radians(-55.0f), glm::vec3(0.5f));  //roration
-        view = glm::translate(view, glm::vec3(-x, -y, -z)); //sets the position of the camera. negated so that forward is positive
-        projection = glm::perspective(glm::radians(theta), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f); //field of view
+        //view = glm::translate(view, glm::vec3(-x, -y, -z)); //sets the position of the camera. negated so that forward is positive
+        view = cameras[activeCam].getViewMatrix(); //view matrix comes from our camera
+        projection = glm::perspective(glm::radians(cameras[activeCam].zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f); //field of view
 
         shader.activate(); 
 
         shader.setMat4("model", model); 
         shader.setMat4("view", view); 
         shader.setMat4("projection", projection); 
+
         shader.setFloat("mixVal", mixVal);
         shader.setMat4("mouseTransform", mouseTransform);
 
@@ -353,7 +376,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 
 //defines the method processInput
 
-void processInput(GLFWwindow* window) {
+void processInput(GLFWwindow* window, double dt) {
     if (Keyboard::key(GLFW_KEY_ESCAPE) || mainJ.buttonState(GLFW_JOYSTICK_BTN_RIGHT)) { //test if escape key is pressed down
         glfwSetWindowShouldClose(window, true); //this will end the while loop, closing the window if the escape key is pressed 
     }
@@ -376,53 +399,47 @@ void processInput(GLFWwindow* window) {
         }
     }
 
-
-    //use ASDW keys to move the image around the screen
-
-    
-    if (Keyboard::key(GLFW_KEY_W)) { //if W key is pressed 
-        //mouseTransform = glm::translate(mouseTransform, glm::vec3(0.0f, 0.001f, 0.0f)); //matrix transform to move in the positive y direction 
-        y -= 0.01f; 
-       
+    if (Keyboard::keyWentDown(GLFW_KEY_TAB)) {
+        activeCam += (activeCam == 0) ? 1 : -1; //if the active cam is 1, add 1 otherwise subtract 1
     }
 
-    if (Keyboard::key(GLFW_KEY_S)) { //if S key is pressed 
-        //mouseTransform = glm::translate(mouseTransform, glm::vec3(0.0f, -0.001f, 0.0f)); //matrix transform to move in the positive y direction 
-        y += 0.01f;
-        
+    //move camera
+    if (Keyboard::key(GLFW_KEY_W)) {
+        cameras[activeCam].updateCameraPos(CameraDirection::FORWARD, dt);
+    }
+    if (Keyboard::key(GLFW_KEY_S)) {
+        cameras[activeCam].updateCameraPos(CameraDirection::BACKWARD, dt);
+    }
+    if (Keyboard::key(GLFW_KEY_D)) {
+        cameras[activeCam].updateCameraPos(CameraDirection::RIGHT, dt);
+    }
+    if (Keyboard::key(GLFW_KEY_A)) {
+        cameras[activeCam].updateCameraPos(CameraDirection::LEFT, dt);
+    }
+    if (Keyboard::key(GLFW_KEY_SPACE)) {
+        cameras[activeCam].updateCameraPos(CameraDirection::UP, dt);
+    }
+    if (Keyboard::key(GLFW_KEY_LEFT_SHIFT)) {
+        cameras[activeCam].updateCameraPos(CameraDirection::DOWN, dt);
     }
 
-    if (Keyboard::key(GLFW_KEY_A)) { //if A key is pressed 
-        //mouseTransform = glm::translate(mouseTransform, glm::vec3(-0.001f, 0.0f, 0.0f)); //matrix transform to move in the negative x direction
-        x += 0.01f; 
+    //use mouse cursor to change vamera direction
+    double dx = Mouse::getDX(); 
+    double dy = Mouse::getDY();
+    if (dx != 0 || dy != 0) {
+        cameras[activeCam].updateCameraDirection(0.05 * dx, 0.05 * dy); //dx and dy multiplied by a factor to decrease sensitivity to mouse cha 
     }
 
-    if (Keyboard::key(GLFW_KEY_D)) { //if D key is pressed 
-        //mouseTransform = glm::translate(mouseTransform, glm::vec3(0.001f, 0.0f, 0.0f)); //matrix transform to move in the positive x direction
-        x -= 0.01f; 
+    //use mouse scroll wheel to zoom
+    double scrollDy = Mouse::getScrollDY(); 
+    if (scrollDy != 0) {
+        cameras[activeCam].updateCameraZoom(scrollDy);
     }
 
-    if (Keyboard::key(GLFW_KEY_Z)) {
-        //mouseTransform = glm::scale(mouseTransform, glm::vec3(1.001, 1.001, 0.0f));
 
-        z -= 0.01f; 
-    }
 
-    if (Keyboard::key(GLFW_KEY_X)) {
-        //mouseTransform = glm::scale(mouseTransform, glm::vec3(.999, .999, 0.0f));
-        z += 0.01f; //increase z value of camera view
-    }
 
-    if (Keyboard::key(GLFW_KEY_F)) { 
-        theta += 0.01f; //if F key pressed, inrease field of view (zoom in)
 
-    }
-
-    if (Keyboard::key(GLFW_KEY_G)) {
-        theta -= 0.01f; //if G key pressed, decrease field of view (zoom out)
-
-    }
-   
    
     //joystick
 
