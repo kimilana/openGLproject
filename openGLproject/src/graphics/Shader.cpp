@@ -1,7 +1,11 @@
 #include "Shader.h"
 
-//constructor
-Shader::Shader(const char* vertexShaderPath, const char* fragmentShaderPath) {
+Shader::Shader() {}
+Shader::Shader(const char* vertexShaderPath, const char* fragShaderPath) {
+	generate(vertexShaderPath, fragShaderPath); 
+}
+
+void Shader::generate(const char* vertexShaderPath, const char* fragmentShaderPath) {
 	int success;  //success of the compilation of shader code 
 	char infolog[512]; //to store error message if there is one 
 

@@ -13,12 +13,13 @@
 #include <streambuf>
 #include <string>
 
-#include "Shader.h" 
+#include "graphics/Shader.h" 
 
 #include "io/Keyboard.h"
 #include "io/Mouse.h"
 #include "io/Joystick.h"
 #include "io/Camera.h"
+#include "io/Screen.h"
 
  
 //method declaration
@@ -29,11 +30,13 @@
 void framebuffer_size_callback(GLFWwindow* window, int width, int height); 
 
 //method to process user input
-void processInput(GLFWwindow* window, double dt); //dt is deltaTime
+void processInput(double dt); //dt is deltaTime
 
 //global variables
 unsigned int SCR_WIDTH = 800;
 unsigned int SCR_HEIGHT = 600;
+
+Screen screen; 
 
 float mixVal = 0.5f; //variable to control the mixing of textures through the shader
 
@@ -50,10 +53,8 @@ float deltaTime = 0.0f;
 float lastFrame = 0.0f; 
 
 
-float x, y, z; 
 Joystick mainJ(0);
 
-float theta = 45.0f; //frame of view 
 
 
 
@@ -70,18 +71,15 @@ int main() {
     //use core profile for GLFW
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    //initialize window object 
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "openGL window", NULL, NULL); //create a pointer to our window, specify width, height, title, monitor(null)
-     
-    //check to see if window was created by checking if the pointer is null
-    if (window == NULL) { //window not created
+# ifdef __APPLE__
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPACT, GL_TRUE);
+#endif
+
+    if (!screen.init()) {
         std::cout << "could not create window." << std::endl;
         glfwTerminate(); //this function terminates glfw
-        return -1; 
+        return -1;
     }
-
-    //set the focus of GLFW to our window
-    glfwMakeContextCurrent(window); 
 
     //glad code 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) { //Glad didn't initialize
@@ -90,24 +88,9 @@ int main() {
     return -1;
 }
 
-    //set viewport. Tell OpenGL how to display/ how to render data
-    // processed coordinates in OpenGL are between -1 and 1, so we effectively map from the range (-1,1) to our window's coordinates, for example (0,800) and (0,600)
-    glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT); //set the position and dimensions of the window, (x position of lower left corner y position of lower left corner, window width,window height) 
+    screen.setParameters(); 
 
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback); 
-
-    glfwSetKeyCallback(window, Keyboard::keyCallback); //sets the key callback of the window which is called when a key is pressed, released or held. 
-    glfwSetCursorPosCallback(window, Mouse::cursorPosCallback); //sets the mouse position callback of the window 
-    glfwSetScrollCallback(window, Mouse::mouseWheelCallback); 
-
-    //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); //do not show mouse cursor
-
-
-    glEnable(GL_DEPTH_TEST); //enables depth testing for the rendering of 3D shapes
-                            //so openGL will automatically write to a depth buffer to keep track of the z positions(depth) of each fragmentand discard fragments if they are too far or if something is covering them
-
-
-
+   
 
     /*
         shaders
@@ -277,11 +260,7 @@ int main() {
         std::cout << "Joystick not present." << std::endl; 
     }
 
-    //coordinates for the view matrix
-    x = 0.0f; 
-    y = 0.0f; 
-    z = 3.0f; 
-
+ 
 
 
 
@@ -293,19 +272,15 @@ int main() {
      WHILE LOOP THAT RUNS THE PROGRAM
     
     */
-    while (!glfwWindowShouldClose(window)) {
+    while (!screen.shouldClose()) {
         double currentTime = glfwGetTime();
         deltaTime = currentTime - lastFrame;
         lastFrame = currentTime; 
 
-
-
         //process input
-        processInput(window, deltaTime);
+        processInput(deltaTime);
 
-        //render
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f); 
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //clear both the buffer holding the colors and the buffer holding the fragment depths when the frame changes
+        screen.update();
 
         glActiveTexture(GL_TEXTURE0); //activate 0th texture unit
         glBindTexture(GL_TEXTURE_2D, texture1); //bind the texture to the active unit. Tell the 0th texture unit to point to texture 1 which points to the image data 
@@ -313,12 +288,6 @@ int main() {
         glActiveTexture(GL_TEXTURE1); //for the second image
         glBindTexture(GL_TEXTURE_2D, texture2); //bind the second texture
 
-
-         //clear the entire window and set color to specified color in RGBA format
-        glClearColor(0.1f, 0.3f, 0.3f, 1.0f); //blue background color 
-
-        //glClearColor(1.0f, 0.7f, 0.10f, 1.0f); //yellow-orange background color
-        glClear(GL_COLOR_BUFFER_BIT); 
         
         // draw shapes
         glBindVertexArray(VAO); //openGL now knows which vertex array object to look at, and as a result knows which vertex buffer data to look at
@@ -332,7 +301,7 @@ int main() {
         model = glm::rotate(model, (float)glfwGetTime() * glm::radians(-55.0f), glm::vec3(0.5f));  //roration
         //view = glm::translate(view, glm::vec3(-x, -y, -z)); //sets the position of the camera. negated so that forward is positive
         view = cameras[activeCam].getViewMatrix(); //view matrix comes from our camera
-        projection = glm::perspective(glm::radians(cameras[activeCam].zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f); //field of view
+        projection = glm::perspective(glm::radians(cameras[activeCam].getZoom()), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f); //field of view
 
         shader.activate(); 
 
@@ -348,8 +317,7 @@ int main() {
         glBindVertexArray(0); 
 
         // send new frame to window
-        glfwSwapBuffers(window);
-        glfwPollEvents();
+        screen.newFrame();
     }
 
     glDeleteVertexArrays(1, &VAO);
@@ -359,9 +327,6 @@ int main() {
     glfwTerminate();
     return 0;
 }
-
-
-
 
 
 
@@ -376,64 +341,65 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 
 //defines the method processInput
 
-void processInput(GLFWwindow* window, double dt) {
+void processInput(double dt) {
     if (Keyboard::key(GLFW_KEY_ESCAPE) || mainJ.buttonState(GLFW_JOYSTICK_BTN_RIGHT)) { //test if escape key is pressed down
-        glfwSetWindowShouldClose(window, true); //this will end the while loop, closing the window if the escape key is pressed 
+        screen.setShouldClose(true);
     }
 
 
-    //change mix value
-    if (Keyboard::key(GLFW_KEY_UP)) {
-        mixVal += .001f; 
+        //change mix value
+        if (Keyboard::key(GLFW_KEY_UP)) {
+            mixVal += .001f;
 
-        if (mixVal > 1) {
-            mixVal = 1.0f;
+            if (mixVal > 1) {
+                mixVal = 1.0f;
+            }
         }
-    }
 
-    if (Keyboard::key(GLFW_KEY_DOWN)) {
-        mixVal -= .001f;
-        
-        if (mixVal < 0) {
-            mixVal = 0.0f;
+        if (Keyboard::key(GLFW_KEY_DOWN)) {
+            mixVal -= .001f;
+
+            if (mixVal < 0) {
+                mixVal = 0.0f;
+            }
         }
-    }
 
-    if (Keyboard::keyWentDown(GLFW_KEY_TAB)) {
-        activeCam += (activeCam == 0) ? 1 : -1; //if the active cam is 1, add 1 otherwise subtract 1
-    }
+        if (Keyboard::keyWentDown(GLFW_KEY_TAB)) {
+            activeCam += (activeCam == 0) ? 1 : -1; //if the active cam is 1, add 1 otherwise subtract 1
+        }
 
-    //move camera
-    if (Keyboard::key(GLFW_KEY_W)) {
-        cameras[activeCam].updateCameraPos(CameraDirection::FORWARD, dt);
-    }
-    if (Keyboard::key(GLFW_KEY_S)) {
-        cameras[activeCam].updateCameraPos(CameraDirection::BACKWARD, dt);
-    }
-    if (Keyboard::key(GLFW_KEY_D)) {
-        cameras[activeCam].updateCameraPos(CameraDirection::RIGHT, dt);
-    }
-    if (Keyboard::key(GLFW_KEY_A)) {
-        cameras[activeCam].updateCameraPos(CameraDirection::LEFT, dt);
-    }
-    if (Keyboard::key(GLFW_KEY_SPACE)) {
-        cameras[activeCam].updateCameraPos(CameraDirection::UP, dt);
-    }
-    if (Keyboard::key(GLFW_KEY_LEFT_SHIFT)) {
-        cameras[activeCam].updateCameraPos(CameraDirection::DOWN, dt);
-    }
+        //move camera
+        if (Keyboard::key(GLFW_KEY_W)) {
+            cameras[activeCam].updateCameraPos(CameraDirection::FORWARD, dt);
+        }
+        if (Keyboard::key(GLFW_KEY_S)) {
+            cameras[activeCam].updateCameraPos(CameraDirection::BACKWARD, dt);
+        }
+        if (Keyboard::key(GLFW_KEY_D)) {
+            cameras[activeCam].updateCameraPos(CameraDirection::RIGHT, dt);
+        }
+        if (Keyboard::key(GLFW_KEY_A)) {
+            cameras[activeCam].updateCameraPos(CameraDirection::LEFT, dt);
+        }
+        if (Keyboard::key(GLFW_KEY_SPACE)) {
+            cameras[activeCam].updateCameraPos(CameraDirection::UP, dt);
+        }
+        if (Keyboard::key(GLFW_KEY_LEFT_SHIFT)) {
+            cameras[activeCam].updateCameraPos(CameraDirection::DOWN, dt);
+        }
 
-    //use mouse cursor to change vamera direction
-    double dx = Mouse::getDX(); 
-    double dy = Mouse::getDY();
-    if (dx != 0 || dy != 0) {
-        cameras[activeCam].updateCameraDirection(0.05 * dx, 0.05 * dy); //dx and dy multiplied by a factor to decrease sensitivity to mouse cha 
-    }
+        //use mouse cursor to change vamera direction
+        double dx = Mouse::getDX();
+        double dy = Mouse::getDY();
+        if (dx != 0 || dy != 0) {
+            cameras[activeCam].updateCameraDirection(0.05 * dx, 0.05 * dy); //dx and dy multiplied by a factor to decrease sensitivity to mouse cha 
+        }
 
-    //use mouse scroll wheel to zoom
-    double scrollDy = Mouse::getScrollDY(); 
-    if (scrollDy != 0) {
-        cameras[activeCam].updateCameraZoom(scrollDy);
+        //use mouse scroll wheel to zoom
+        double scrollDy = Mouse::getScrollDY();
+        if (scrollDy != 0) {
+            cameras[activeCam].updateCameraZoom(scrollDy);
+        }
     }
 
 
@@ -441,66 +407,8 @@ void processInput(GLFWwindow* window, double dt) {
 
 
    
-    //joystick
-
-    mainJ.update(); 
-
-    float lx = mainJ.axesState(GLFW_JOYSTICK_AXES_LEFT_STICK_X); 
-    float ly = mainJ.axesState(GLFW_JOYSTICK_AXES_LEFT_STICK_Y); 
+   
 
 
-    //account for deadzone
-    if (std::abs(lx) > 0.05f) { //deadzone: have to move joystick a certain amount to move 
-        x += lx / 5.0f; 
-    }
-
-    if (std::abs(ly) > 0.05f) {
-        mouseTransform = glm::translate(mouseTransform, glm::vec3(0.0f, ly / 1000, 0.0f));
-        z += ly / 5.0f; 
-    }
-
-    if (mainJ.buttonState(GLFW_JOYSTICK_BTN_DOWN) == GLFW_PRESS) {
-        y += 0.25f; 
-    }
-
-    if (mainJ.buttonState(GLFW_JOYSTICK_BTN_RIGHT) == GLFW_PRESS) {
-        y -= 0.25f;
-    }
-
-    float rt = mainJ.axesState(GLFW_JOYSTICK_AXES_RIGHT_TRIGGER) / 2.0f + 0.5f;
-    if (rt > 0.5f) {
-        theta += 0.1f; 
-    }
-
-
-    float lt = mainJ.axesState(GLFW_JOYSTICK_AXES_LEFT_TRIGGER) / 2.0f + 0.5f;
-    if (lt > 0.5f) {
-        theta -= 0.1f;
-    }
-
-
-
-
-
-
-    /*
-   //right joystick trigger zooms in. the triggers are axes because they represent a continuous range of values 
-    float rt = mainJ.axesState(GLFW_JOYSTICK_AXES_RIGHT_TRIGGER) / 2 + 0.5f;  //normal range for triggers is [-1,1], we are switching it to [0,1]
-
-    //left joystick trigger zooms out 
-    float lt = mainJ.axesState(GLFW_JOYSTICK_AXES_LEFT_TRIGGER) / 2 + 0.5f;
-    if (lt < 0.500008f) {
-        mouseTransform = glm::scale(mouseTransform, glm::vec3(1-lt / 10, 1-lt / 10, 0.0f));
-    }
-    if (lt > 0.500008f) {
-        mouseTransform = glm::scale(mouseTransform, glm::vec3(1 + lt / 10, 1 + lt / 10, 0.0f));
-    }
-    */
-
-      
-
-
-
-}
 
 
