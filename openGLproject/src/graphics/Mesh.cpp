@@ -35,7 +35,7 @@ void Mesh::render(Shader shader) {
 	//activate textures
 	for (unsigned int i = 0; i < textures.size(); i++) {
 		shader.setInt(textures[i].name, textures[i].id); //get texture name and id from texture objects and set them in the shader program  
-		glActiveTexture(GL_TEXTURE0 + i); 
+		glActiveTexture(GL_TEXTURE0 + i); //set the ith slot to active 
 		textures[i].bind();
 	}
 
@@ -74,12 +74,15 @@ void Mesh::setup() {
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW); //data for the EBO
 
 	//set vertex attribute pointers
-	//vertex.position
+	//set pointers for vertex.position
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
 	glEnableVertexAttribArray(0); 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0); 
-	//vertex.texCoord
-	glEnableVertexAttribArray(1);
+	
+
+	//set pointers for vertex.texCoord
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texCoord));
+	glEnableVertexAttribArray(1);
+	
 
 	glBindVertexArray(0); 
 }

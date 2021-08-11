@@ -158,6 +158,7 @@
   <ItemGroup>
     <ClInclude Include="src\graphics\Mesh.h" />
     <ClInclude Include="src\graphics\Model.h" />
+    <ClInclude Include="src\graphics\models\cube.hpp" />
     <ClInclude Include="src\graphics\Texture.h" />
     <ClInclude Include="src\io\Camera.h" />
     <ClInclude Include="src\io\Joystick.h" />
